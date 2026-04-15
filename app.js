@@ -17,12 +17,15 @@ const exportBtn = document.querySelector("#exportBtn");
 const importInput = document.querySelector("#importInput");
 const installBtn = document.querySelector("#installBtn");
 const installHelp = document.querySelector("#installHelp");
+const updateBanner = document.querySelector("#updateBanner");
+const refreshAppBtn = document.querySelector("#refreshAppBtn");
 const manualEntryForm = document.querySelector("#manualEntryForm");
 const entryDate = document.querySelector("#entryDate");
 const entryStart = document.querySelector("#entryStart");
 const entryEnd = document.querySelector("#entryEnd");
 const entryNotes = document.querySelector("#entryNotes");
 let deferredInstallPrompt = null;
+let waitingServiceWorker = null;
 
 entryDate.value = formatDateInput(new Date());
 
@@ -32,13 +35,42 @@ exportBtn.addEventListener("click", handleExport);
 importInput.addEventListener("change", handleImport);
 manualEntryForm.addEventListener("submit", handleManualEntry);
 installBtn.addEventListener("click", handleInstall);
+refreshAppBtn.addEventListener("click", handleAppRefresh);
 
 render();
 window.setInterval(render, 30000);
 
 if ("serviceWorker" in navigator) {
+  let refreshing = false;
+
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js").catch(() => {});
+    navigator.serviceWorker.register("./service-worker.js").then((registration) => {
+      if (registration.waiting) {
+        showUpdateReady(registration.waiting);
+      }
+
+      registration.addEventListener("updatefound", () => {
+        const newWorker = registration.installing;
+        if (!newWorker) {
+          return;
+        }
+
+        newWorker.addEventListener("statechange", () => {
+          if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+            showUpdateReady(newWorker);
+          }
+        });
+      });
+    }).catch(() => {});
+  });
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (refreshing) {
+      return;
+    }
+
+    refreshing = true;
+    window.location.reload();
   });
 }
 
@@ -201,6 +233,15 @@ async function handleInstall() {
   deferredInstallPrompt = null;
 }
 
+function handleAppRefresh() {
+  if (waitingServiceWorker) {
+    waitingServiceWorker.postMessage({ type: "SKIP_WAITING" });
+    return;
+  }
+
+  window.location.reload();
+}
+
 function render() {
   const now = new Date();
   const activeSession = getActiveSession();
@@ -234,6 +275,11 @@ function render() {
   weekRange.textContent = `${weekLabel(now)} total`;
 
   renderSessionList(sessionRecords, now);
+}
+
+function showUpdateReady(serviceWorker) {
+  waitingServiceWorker = serviceWorker;
+  updateBanner.hidden = false;
 }
 
 function renderSessionList(sessionRecords, now) {

@@ -126,6 +126,25 @@ h1 {
   margin-top: 24px;
 }
 
+.update-banner {
+  margin-bottom: 18px;
+  border: 1px solid rgba(198, 90, 46, 0.25);
+  background: rgba(255, 245, 236, 0.95);
+}
+
+.update-banner-content {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.update-banner h2,
+.update-banner p {
+  margin-bottom: 0;
+}
+
 .install-actions {
   display: flex;
   gap: 18px;
@@ -353,6 +372,10 @@ input {
   .panel-card {
     border-radius: 24px;
     padding: 20px;
+  }
+
+  .update-banner-content {
+    align-items: stretch;
   }
 
   h1 {
