@@ -1,0 +1,17 @@
+{
+  "name": "Timecard Tracker",
+  "short_name": "Timecard",
+  "description": "Track clock-in and clock-out sessions with daily and weekly totals.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f7f2ea",
+  "theme_color": "#c65a2e",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

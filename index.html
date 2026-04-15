@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timecard Tracker</title>
+  <meta name="theme-color" content="#c65a2e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Timecard">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Personal Timecard</p>
+        <h1>Keep your punch times nearby.</h1>
+        <p class="hero-text">
+          Track in/out sessions across the day, even if you bounce in and out of work a lot.
+          Your totals stay visible at the top and your data stays saved on this computer.
+        </p>
+      </div>
+
+      <div class="summary-grid">
+        <article class="summary-card">
+          <span class="label">Status</span>
+          <strong id="statusText">Off the clock</strong>
+          <small id="statusSubtext">No active session</small>
+        </article>
+        <article class="summary-card">
+          <span class="label">Today</span>
+          <strong id="todayHours">0h 00m</strong>
+          <small id="todayRange">No sessions yet</small>
+        </article>
+        <article class="summary-card">
+          <span class="label">This Week</span>
+          <strong id="weekHours">0h 00m</strong>
+          <small id="weekRange">Current week total</small>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel-card install-card">
+      <div class="card-heading">
+        <div>
+          <h2>Phone Access</h2>
+          <p>Install this on your phone home screen and it will behave like a simple app.</p>
+        </div>
+      </div>
+      <div class="install-actions">
+        <button id="installBtn" class="primary-button" type="button" hidden>Install App</button>
+        <p id="installHelp" class="install-help">
+          Open this page on your phone, then use your browser menu's Add to Home Screen option if the install button does not appear.
+        </p>
+      </div>
+    </section>
+
+    <section class="controls-panel">
+      <div class="button-row">
+        <button id="clockInBtn" class="primary-button">Clock In</button>
+        <button id="clockOutBtn" class="secondary-button">Clock Out</button>
+        <button id="exportBtn" class="secondary-button" type="button">Export Data</button>
+        <label class="import-button secondary-button" for="importInput">Import Data</label>
+        <input id="importInput" type="file" accept="application/json" hidden>
+      </div>
+
+      <div class="panel-card">
+        <div class="card-heading">
+          <div>
+            <h2>Quick Add Session</h2>
+            <p>Add a missed session or correct a day without editing raw data.</p>
+          </div>
+        </div>
+
+        <form id="manualEntryForm" class="manual-form">
+          <label>
+            <span>Date</span>
+            <input id="entryDate" name="entryDate" type="date" required>
+          </label>
+          <label>
+            <span>Clock In</span>
+            <input id="entryStart" name="entryStart" type="time" required>
+          </label>
+          <label>
+            <span>Clock Out</span>
+            <input id="entryEnd" name="entryEnd" type="time" required>
+          </label>
+          <button type="submit" class="tertiary-button">Save Session</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="panel-card active-session-card">
+      <div class="card-heading">
+        <div>
+          <h2>Current Session</h2>
+          <p id="activeSessionText">You are currently off the clock.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel-card">
+      <div class="card-heading">
+        <div>
+          <h2>Session Log</h2>
+          <p>Each row can be updated or removed if you need to fix a time.</p>
+        </div>
+      </div>
+      <div id="sessionList" class="session-list"></div>
+    </section>
+  </main>
+
+  <template id="sessionRowTemplate">
+    <article class="session-row">
+      <div class="session-main">
+        <div class="session-date-group">
+          <strong class="session-date"></strong>
+          <span class="session-duration"></span>
+        </div>
+        <div class="session-fields">
+          <label>
+            <span>In</span>
+            <input class="session-start" type="datetime-local">
+          </label>
+          <label>
+            <span>Out</span>
+            <input class="session-end" type="datetime-local">
+          </label>
+        </div>
+      </div>
+      <div class="session-actions">
+        <button class="save-row tertiary-button" type="button">Update</button>
+        <button class="delete-row ghost-button" type="button">Delete</button>
+      </div>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
