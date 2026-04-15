@@ -21,6 +21,7 @@ const manualEntryForm = document.querySelector("#manualEntryForm");
 const entryDate = document.querySelector("#entryDate");
 const entryStart = document.querySelector("#entryStart");
 const entryEnd = document.querySelector("#entryEnd");
+const entryNotes = document.querySelector("#entryNotes");
 let deferredInstallPrompt = null;
 
 entryDate.value = formatDateInput(new Date());
@@ -63,7 +64,9 @@ function loadState() {
 
     const parsed = JSON.parse(raw);
     return {
-      sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
+      sessions: Array.isArray(parsed.sessions)
+        ? parsed.sessions.map(normalizeSession).filter(Boolean)
+        : [],
     };
   } catch {
     return { sessions: [] };
@@ -84,6 +87,7 @@ function handleClockIn() {
     id: crypto.randomUUID(),
     start: new Date().toISOString(),
     end: null,
+    notes: "",
   });
   saveState();
   render();
@@ -128,6 +132,7 @@ function handleManualEntry(event) {
     id: crypto.randomUUID(),
     start: start.toISOString(),
     end: end.toISOString(),
+    notes: entryNotes.value.trim(),
   });
 
   state.sessions.sort((a, b) => new Date(b.start) - new Date(a.start));
@@ -165,13 +170,8 @@ function handleImport(event) {
       const incomingSessions = Array.isArray(parsed.sessions) ? parsed.sessions : [];
       const normalizedSessions = incomingSessions
         .filter((session) => session && session.start)
-        .map((session) => ({
-          id: session.id || crypto.randomUUID(),
-          start: new Date(session.start).toISOString(),
-          end: session.end ? new Date(session.end).toISOString() : null,
-        }))
-        .filter((session) => !Number.isNaN(new Date(session.start).getTime()))
-        .filter((session) => !session.end || new Date(session.end) > new Date(session.start));
+        .map(normalizeSession)
+        .filter(Boolean);
 
       state.sessions = normalizedSessions.sort((a, b) => new Date(b.start) - new Date(a.start));
       saveState();
@@ -251,20 +251,47 @@ function renderSessionList(sessionRecords, now) {
     const node = sessionRowTemplate.content.firstElementChild.cloneNode(true);
     const start = new Date(session.start);
     const end = session.end ? new Date(session.end) : now;
+    const noteText = node.querySelector(".session-note-text");
+    const editForm = node.querySelector(".session-edit-form");
+    const editButton = node.querySelector(".edit-row");
+    const saveButton = node.querySelector(".save-row");
+    const cancelButton = node.querySelector(".cancel-row");
 
     node.querySelector(".session-date").textContent = formatDayHeading(start);
     node.querySelector(".session-duration").textContent = session.end
       ? formatDuration(end - start)
       : `${formatDuration(end - start)} so far`;
+    node.querySelector(".session-start-text").textContent = formatDateTime(start);
+    node.querySelector(".session-end-text").textContent = session.end ? formatDateTime(end) : "Still clocked in";
+
+    if (session.notes) {
+      noteText.hidden = false;
+      noteText.textContent = session.notes;
+    }
 
     const startInput = node.querySelector(".session-start");
     const endInput = node.querySelector(".session-end");
+    const notesInput = node.querySelector(".session-notes");
 
     startInput.value = formatDateTimeLocal(start);
     endInput.value = session.end ? formatDateTimeLocal(end) : "";
     endInput.placeholder = "Still clocked in";
+    notesInput.value = session.notes || "";
 
-    node.querySelector(".save-row").addEventListener("click", () => {
+    setEditMode(false);
+
+    editButton.addEventListener("click", () => {
+      setEditMode(true);
+    });
+
+    cancelButton.addEventListener("click", () => {
+      startInput.value = formatDateTimeLocal(new Date(session.start));
+      endInput.value = session.end ? formatDateTimeLocal(new Date(session.end)) : "";
+      notesInput.value = session.notes || "";
+      setEditMode(false);
+    });
+
+    saveButton.addEventListener("click", () => {
       const nextStart = new Date(startInput.value);
       const nextEnd = endInput.value ? new Date(endInput.value) : null;
 
@@ -293,6 +320,7 @@ function renderSessionList(sessionRecords, now) {
 
       session.start = nextStart.toISOString();
       session.end = nextEnd ? nextEnd.toISOString() : null;
+      session.notes = notesInput.value.trim();
       saveState();
       render();
     });
@@ -309,6 +337,13 @@ function renderSessionList(sessionRecords, now) {
     });
 
     sessionList.appendChild(node);
+
+    function setEditMode(isEditing) {
+      editForm.hidden = !isEditing;
+      saveButton.hidden = !isEditing;
+      cancelButton.hidden = !isEditing;
+      editButton.hidden = isEditing;
+    }
   }
 }
 
@@ -342,6 +377,7 @@ function formatDateTime(date) {
     weekday: "short",
     month: "short",
     day: "numeric",
+    year: "numeric",
     hour: "numeric",
     minute: "2-digit",
   }).format(date);
@@ -408,4 +444,28 @@ function formatShortDate(date) {
 
 function formatFileDate(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function normalizeSession(session) {
+  if (!session || !session.start) {
+    return null;
+  }
+
+  const start = new Date(session.start);
+  const end = session.end ? new Date(session.end) : null;
+
+  if (Number.isNaN(start.getTime())) {
+    return null;
+  }
+
+  if (end && (Number.isNaN(end.getTime()) || end <= start)) {
+    return null;
+  }
+
+  return {
+    id: session.id || crypto.randomUUID(),
+    start: start.toISOString(),
+    end: end ? end.toISOString() : null,
+    notes: typeof session.notes === "string" ? session.notes : "",
+  };
 }

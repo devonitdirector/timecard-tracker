@@ -203,7 +203,7 @@ button:hover {
 .manual-form {
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: end;
 }
 
@@ -211,6 +211,12 @@ button:hover {
 .session-fields label {
   display: grid;
   gap: 8px;
+}
+
+.notes-field {
+  display: grid;
+  gap: 8px;
+  grid-column: span 2;
 }
 
 .manual-form span,
@@ -253,6 +259,44 @@ input {
   gap: 16px;
 }
 
+.session-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.meta-chip {
+  min-width: 160px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 250, 242, 0.92);
+  border: 1px solid rgba(88, 63, 34, 0.1);
+}
+
+.meta-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-dark);
+}
+
+.session-note-text {
+  margin: 0;
+  padding: 14px 16px;
+  border-left: 4px solid rgba(198, 90, 46, 0.35);
+  border-radius: 0 16px 16px 0;
+  background: rgba(255, 250, 242, 0.75);
+  line-height: 1.5;
+}
+
+.session-edit-form {
+  display: grid;
+  gap: 14px;
+}
+
 .session-date-group {
   display: flex;
   flex-wrap: wrap;
@@ -270,6 +314,7 @@ input {
   display: grid;
   gap: 10px;
   align-content: center;
+  min-width: 112px;
 }
 
 .empty-state {
@@ -291,6 +336,10 @@ input {
 
   .session-actions {
     grid-auto-flow: row;
+  }
+
+  .notes-field {
+    grid-column: auto;
   }
 }
 

@@ -88,6 +88,10 @@
             <span>Clock Out</span>
             <input id="entryEnd" name="entryEnd" type="time" required>
           </label>
+          <label class="notes-field">
+            <span>Notes</span>
+            <input id="entryNotes" name="entryNotes" type="text" maxlength="200" placeholder="Optional note about this session">
+          </label>
           <button type="submit" class="tertiary-button">Save Session</button>
         </form>
       </div>
@@ -106,7 +110,7 @@
       <div class="card-heading">
         <div>
           <h2>Session Log</h2>
-          <p>Each row can be updated or removed if you need to fix a time.</p>
+          <p>Review each shift cleanly, then tap edit only when you need to change something.</p>
         </div>
       </div>
       <div id="sessionList" class="session-list"></div>
@@ -120,19 +124,38 @@
           <strong class="session-date"></strong>
           <span class="session-duration"></span>
         </div>
-        <div class="session-fields">
-          <label>
-            <span>In</span>
-            <input class="session-start" type="datetime-local">
-          </label>
-          <label>
-            <span>Out</span>
-            <input class="session-end" type="datetime-local">
-          </label>
+        <div class="session-meta">
+          <div class="meta-chip">
+            <span class="meta-label">In</span>
+            <strong class="session-start-text"></strong>
+          </div>
+          <div class="meta-chip">
+            <span class="meta-label">Out</span>
+            <strong class="session-end-text"></strong>
+          </div>
         </div>
+        <p class="session-note-text" hidden></p>
+        <form class="session-edit-form" hidden>
+          <div class="session-fields">
+            <label>
+              <span>In</span>
+              <input class="session-start" type="datetime-local">
+            </label>
+            <label>
+              <span>Out</span>
+              <input class="session-end" type="datetime-local">
+            </label>
+          </div>
+          <label class="notes-field">
+            <span>Notes</span>
+            <input class="session-notes" type="text" maxlength="200" placeholder="Optional note about this session">
+          </label>
+        </form>
       </div>
       <div class="session-actions">
+        <button class="edit-row secondary-button" type="button">Edit</button>
         <button class="save-row tertiary-button" type="button">Update</button>
+        <button class="cancel-row secondary-button" type="button">Cancel</button>
         <button class="delete-row ghost-button" type="button">Delete</button>
       </div>
     </article>
