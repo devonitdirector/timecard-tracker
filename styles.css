@@ -158,8 +158,13 @@ h1 {
   line-height: 1.5;
 }
 
+.install-actions button {
+  flex: 0 0 auto;
+}
+
 button,
-input {
+input,
+textarea {
   font: inherit;
 }
 
@@ -238,19 +243,57 @@ button:hover {
   grid-column: span 2;
 }
 
+.type-field {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.type-field legend {
+  padding: 0;
+  margin-bottom: 4px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.choice-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+}
+
+.choice-pill input {
+  width: auto;
+  margin: 0;
+}
+
 .manual-form span,
 .session-fields span {
   font-size: 0.85rem;
   font-weight: 700;
 }
 
-input {
+input,
+textarea {
   width: 100%;
   padding: 14px 16px;
   border-radius: 16px;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.9);
   color: var(--text);
+}
+
+textarea {
+  min-height: 112px;
+  resize: vertical;
 }
 
 .active-session-card,
@@ -261,6 +304,34 @@ input {
 .session-list {
   display: grid;
   gap: 14px;
+}
+
+.weekly-totals-list {
+  display: grid;
+  gap: 14px;
+}
+
+.weekly-total-row {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1.2fr repeat(3, minmax(0, 1fr));
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+}
+
+.weekly-total-cell {
+  display: grid;
+  gap: 6px;
+}
+
+.weekly-total-cell span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .session-row {
@@ -348,6 +419,7 @@ input {
   .summary-grid,
   .controls-panel,
   .manual-form,
+  .weekly-total-row,
   .session-row,
   .session-fields {
     grid-template-columns: 1fr;
@@ -390,7 +462,8 @@ input {
 
   button,
   .import-button,
-  input {
+  input,
+  textarea {
     min-height: 52px;
   }
 

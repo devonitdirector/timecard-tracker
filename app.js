@@ -17,6 +17,7 @@ const clockOutBtn = document.querySelector("#clockOutBtn");
 const exportBtn = document.querySelector("#exportBtn");
 const importInput = document.querySelector("#importInput");
 const installBtn = document.querySelector("#installBtn");
+const checkUpdatesBtn = document.querySelector("#checkUpdatesBtn");
 const installHelp = document.querySelector("#installHelp");
 const updateBanner = document.querySelector("#updateBanner");
 const refreshAppBtn = document.querySelector("#refreshAppBtn");
@@ -28,6 +29,7 @@ const entryNotes = document.querySelector("#entryNotes");
 const entryWorkTypeInputs = document.querySelectorAll('input[name="entryWorkType"]');
 let deferredInstallPrompt = null;
 let waitingServiceWorker = null;
+let serviceWorkerRegistration = null;
 const editState = new Map();
 
 entryDate.value = formatDateInput(new Date());
@@ -38,6 +40,7 @@ exportBtn.addEventListener("click", handleExport);
 importInput.addEventListener("change", handleImport);
 manualEntryForm.addEventListener("submit", handleManualEntry);
 installBtn.addEventListener("click", handleInstall);
+checkUpdatesBtn.addEventListener("click", handleCheckForUpdates);
 refreshAppBtn.addEventListener("click", handleAppRefresh);
 
 render();
@@ -48,6 +51,7 @@ if ("serviceWorker" in navigator) {
 
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./service-worker.js").then((registration) => {
+      serviceWorkerRegistration = registration;
       if (registration.waiting) {
         showUpdateReady(registration.waiting);
       }
@@ -239,6 +243,36 @@ async function handleInstall() {
   deferredInstallPrompt = null;
 }
 
+async function handleCheckForUpdates() {
+  if (!("serviceWorker" in navigator) || !serviceWorkerRegistration) {
+    installHelp.textContent = "Update checking is not available in this browser yet.";
+    return;
+  }
+
+  checkUpdatesBtn.disabled = true;
+  checkUpdatesBtn.textContent = "Checking...";
+  installHelp.textContent = "Checking for a newer version now.";
+
+  try {
+    const previousWaiting = serviceWorkerRegistration.waiting;
+    await serviceWorkerRegistration.update();
+
+    if (serviceWorkerRegistration.waiting && serviceWorkerRegistration.waiting !== previousWaiting) {
+      showUpdateReady(serviceWorkerRegistration.waiting);
+      installHelp.textContent = "New version found. Tap Refresh App.";
+    } else if (waitingServiceWorker) {
+      installHelp.textContent = "New version found. Tap Refresh App.";
+    } else {
+      installHelp.textContent = "You already have the newest version.";
+    }
+  } catch {
+    installHelp.textContent = "Update check failed. Try again in a moment.";
+  } finally {
+    checkUpdatesBtn.disabled = false;
+    checkUpdatesBtn.textContent = "Check for Updates";
+  }
+}
+
 function handleAppRefresh() {
   if (waitingServiceWorker) {
     waitingServiceWorker.postMessage({ type: "SKIP_WAITING" });
@@ -287,6 +321,7 @@ function render() {
 function showUpdateReady(serviceWorker) {
   waitingServiceWorker = serviceWorker;
   updateBanner.hidden = false;
+  installHelp.textContent = "New version found. Tap Refresh App.";
 }
 
 function renderSessionList(sessionRecords, now) {
