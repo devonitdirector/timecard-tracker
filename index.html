@@ -98,9 +98,20 @@
             <span>Clock Out</span>
             <input id="entryEnd" name="entryEnd" type="time" required>
           </label>
+          <fieldset class="type-field">
+            <legend>Type</legend>
+            <label class="choice-pill">
+              <input type="radio" name="entryWorkType" value="Main Job" checked>
+              <span>Main Job</span>
+            </label>
+            <label class="choice-pill">
+              <input type="radio" name="entryWorkType" value="Side Job">
+              <span>Side Job</span>
+            </label>
+          </fieldset>
           <label class="notes-field">
             <span>Notes</span>
-            <input id="entryNotes" name="entryNotes" type="text" maxlength="200" placeholder="Optional note about this session">
+            <textarea id="entryNotes" name="entryNotes" rows="4" maxlength="600" placeholder="Optional note about this session"></textarea>
           </label>
           <button type="submit" class="tertiary-button">Save Session</button>
         </form>
@@ -114,6 +125,16 @@
           <p id="activeSessionText">You are currently off the clock.</p>
         </div>
       </div>
+    </section>
+
+    <section class="panel-card">
+      <div class="card-heading">
+        <div>
+          <h2>Weekly Totals</h2>
+          <p>Recent weekly totals grouped by pay type.</p>
+        </div>
+      </div>
+      <div id="weeklyTotalsList" class="weekly-totals-list"></div>
     </section>
 
     <section class="panel-card">
@@ -136,6 +157,10 @@
         </div>
         <div class="session-meta">
           <div class="meta-chip">
+            <span class="meta-label">Type</span>
+            <strong class="session-type-text"></strong>
+          </div>
+          <div class="meta-chip">
             <span class="meta-label">In</span>
             <strong class="session-start-text"></strong>
           </div>
@@ -156,9 +181,20 @@
               <input class="session-end" type="datetime-local">
             </label>
           </div>
+          <fieldset class="type-field">
+            <legend>Type</legend>
+            <label class="choice-pill">
+              <input class="session-work-type" type="radio" value="Main Job">
+              <span>Main Job</span>
+            </label>
+            <label class="choice-pill">
+              <input class="session-work-type" type="radio" value="Side Job">
+              <span>Side Job</span>
+            </label>
+          </fieldset>
           <label class="notes-field">
             <span>Notes</span>
-            <input class="session-notes" type="text" maxlength="200" placeholder="Optional note about this session">
+            <textarea class="session-notes" rows="5" maxlength="600" placeholder="Optional note about this session"></textarea>
           </label>
         </form>
       </div>

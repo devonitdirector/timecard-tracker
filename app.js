@@ -10,6 +10,7 @@ const weekHours = document.querySelector("#weekHours");
 const weekRange = document.querySelector("#weekRange");
 const activeSessionText = document.querySelector("#activeSessionText");
 const sessionList = document.querySelector("#sessionList");
+const weeklyTotalsList = document.querySelector("#weeklyTotalsList");
 const sessionRowTemplate = document.querySelector("#sessionRowTemplate");
 const clockInBtn = document.querySelector("#clockInBtn");
 const clockOutBtn = document.querySelector("#clockOutBtn");
@@ -24,8 +25,10 @@ const entryDate = document.querySelector("#entryDate");
 const entryStart = document.querySelector("#entryStart");
 const entryEnd = document.querySelector("#entryEnd");
 const entryNotes = document.querySelector("#entryNotes");
+const entryWorkTypeInputs = document.querySelectorAll('input[name="entryWorkType"]');
 let deferredInstallPrompt = null;
 let waitingServiceWorker = null;
+const editState = new Map();
 
 entryDate.value = formatDateInput(new Date());
 
@@ -120,6 +123,7 @@ function handleClockIn() {
     start: new Date().toISOString(),
     end: null,
     notes: "",
+    workType: "Main Job",
   });
   saveState();
   render();
@@ -165,12 +169,14 @@ function handleManualEntry(event) {
     start: start.toISOString(),
     end: end.toISOString(),
     notes: entryNotes.value.trim(),
+    workType: getSelectedEntryWorkType(),
   });
 
   state.sessions.sort((a, b) => new Date(b.start) - new Date(a.start));
   saveState();
   manualEntryForm.reset();
   entryDate.value = formatDateInput(new Date());
+  setEntryWorkType("Main Job");
   render();
 }
 
@@ -274,6 +280,7 @@ function render() {
     : "No sessions yet";
   weekRange.textContent = `${weekLabel(now)} total`;
 
+  renderWeeklyTotals(sessionRecords, now);
   renderSessionList(sessionRecords, now);
 }
 
@@ -307,6 +314,7 @@ function renderSessionList(sessionRecords, now) {
     node.querySelector(".session-duration").textContent = session.end
       ? formatDuration(end - start)
       : `${formatDuration(end - start)} so far`;
+    node.querySelector(".session-type-text").textContent = session.workType || "Main Job";
     node.querySelector(".session-start-text").textContent = formatDateTime(start);
     node.querySelector(".session-end-text").textContent = session.end ? formatDateTime(end) : "Still clocked in";
 
@@ -318,24 +326,39 @@ function renderSessionList(sessionRecords, now) {
     const startInput = node.querySelector(".session-start");
     const endInput = node.querySelector(".session-end");
     const notesInput = node.querySelector(".session-notes");
+    const workTypeInputs = node.querySelectorAll(".session-work-type");
+    const savedEditState = editState.get(session.id);
 
-    startInput.value = formatDateTimeLocal(start);
-    endInput.value = session.end ? formatDateTimeLocal(end) : "";
+    workTypeInputs.forEach((input) => {
+      input.name = `sessionWorkType-${session.id}`;
+    });
+
+    startInput.value = savedEditState?.start ?? formatDateTimeLocal(start);
+    endInput.value = savedEditState?.end ?? (session.end ? formatDateTimeLocal(end) : "");
     endInput.placeholder = "Still clocked in";
-    notesInput.value = session.notes || "";
+    notesInput.value = savedEditState?.notes ?? (session.notes || "");
+    setCheckedWorkType(workTypeInputs, savedEditState?.workType ?? session.workType ?? "Main Job");
 
-    setEditMode(false);
+    setEditMode(Boolean(savedEditState?.isEditing));
 
     editButton.addEventListener("click", () => {
       setEditMode(true);
+      notesInput.focus();
     });
 
     cancelButton.addEventListener("click", () => {
+      clearEditState(session.id);
       startInput.value = formatDateTimeLocal(new Date(session.start));
       endInput.value = session.end ? formatDateTimeLocal(new Date(session.end)) : "";
       notesInput.value = session.notes || "";
+      setCheckedWorkType(workTypeInputs, session.workType || "Main Job");
       setEditMode(false);
     });
+
+    startInput.addEventListener("input", captureDraftState);
+    endInput.addEventListener("input", captureDraftState);
+    notesInput.addEventListener("input", captureDraftState);
+    workTypeInputs.forEach((input) => input.addEventListener("change", captureDraftState));
 
     saveButton.addEventListener("click", () => {
       const nextStart = new Date(startInput.value);
@@ -367,6 +390,8 @@ function renderSessionList(sessionRecords, now) {
       session.start = nextStart.toISOString();
       session.end = nextEnd ? nextEnd.toISOString() : null;
       session.notes = notesInput.value.trim();
+      session.workType = getCheckedWorkType(workTypeInputs);
+      clearEditState(session.id);
       saveState();
       render();
     });
@@ -378,6 +403,7 @@ function renderSessionList(sessionRecords, now) {
       }
 
       state.sessions = state.sessions.filter((entry) => entry.id !== session.id);
+      clearEditState(session.id);
       saveState();
       render();
     });
@@ -385,11 +411,65 @@ function renderSessionList(sessionRecords, now) {
     sessionList.appendChild(node);
 
     function setEditMode(isEditing) {
+      updateEditState(session.id, {
+        isEditing,
+        start: startInput.value,
+        end: endInput.value,
+        notes: notesInput.value,
+        workType: getCheckedWorkType(workTypeInputs),
+      });
       editForm.hidden = !isEditing;
       saveButton.hidden = !isEditing;
       cancelButton.hidden = !isEditing;
       editButton.hidden = isEditing;
     }
+
+    function captureDraftState() {
+      updateEditState(session.id, {
+        isEditing: !editForm.hidden,
+        start: startInput.value,
+        end: endInput.value,
+        notes: notesInput.value,
+        workType: getCheckedWorkType(workTypeInputs),
+      });
+    }
+  }
+}
+
+function renderWeeklyTotals(sessionRecords, now) {
+  weeklyTotalsList.innerHTML = "";
+  const totals = buildWeeklyTotals(sessionRecords, now);
+
+  if (!totals.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "Weekly totals will appear once you have saved sessions.";
+    weeklyTotalsList.appendChild(empty);
+    return;
+  }
+
+  for (const total of totals) {
+    const row = document.createElement("article");
+    row.className = "weekly-total-row";
+    row.innerHTML = `
+      <div class="weekly-total-cell">
+        <span>Week</span>
+        <strong>${total.label}</strong>
+      </div>
+      <div class="weekly-total-cell">
+        <span>All Hours</span>
+        <strong>${formatDuration(total.all)}</strong>
+      </div>
+      <div class="weekly-total-cell">
+        <span>Main Job</span>
+        <strong>${formatDuration(total.mainJob)}</strong>
+      </div>
+      <div class="weekly-total-cell">
+        <span>Side Job</span>
+        <strong>${formatDuration(total.sideJob)}</strong>
+      </div>
+    `;
+    weeklyTotalsList.appendChild(row);
   }
 }
 
@@ -481,6 +561,12 @@ function weekLabel(date) {
   return `${formatShortDate(start)} - ${formatShortDate(end)}`;
 }
 
+function weekLabelFromStart(start) {
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  return `${formatShortDate(start)} - ${formatShortDate(end)}`;
+}
+
 function formatShortDate(date) {
   return new Intl.DateTimeFormat(undefined, {
     month: "short",
@@ -513,5 +599,102 @@ function normalizeSession(session) {
     start: start.toISOString(),
     end: end ? end.toISOString() : null,
     notes: typeof session.notes === "string" ? session.notes : "",
+    workType: normalizeWorkType(session.workType),
   };
+}
+
+function buildWeeklyTotals(sessionRecords, now) {
+  const bucketMap = new Map();
+  const currentWeekStart = startOfWeek(now);
+
+  for (const session of sessionRecords) {
+    const start = new Date(session.start);
+    const end = session.end ? new Date(session.end) : now;
+    let cursor = new Date(startOfWeek(start));
+
+    while (cursor < end) {
+      const nextWeek = new Date(cursor);
+      nextWeek.setDate(nextWeek.getDate() + 7);
+      const overlapStart = Math.max(start.getTime(), cursor.getTime());
+      const overlapEnd = Math.min(end.getTime(), nextWeek.getTime());
+      const duration = Math.max(0, overlapEnd - overlapStart);
+
+      if (duration > 0) {
+        const key = cursor.toISOString();
+        if (!bucketMap.has(key)) {
+          bucketMap.set(key, {
+            start: new Date(cursor),
+            all: 0,
+            mainJob: 0,
+            sideJob: 0,
+          });
+        }
+
+        const bucket = bucketMap.get(key);
+        bucket.all += duration;
+        if (session.workType === "Side Job") {
+          bucket.sideJob += duration;
+        } else {
+          bucket.mainJob += duration;
+        }
+      }
+
+      cursor = nextWeek;
+    }
+  }
+
+  return [...bucketMap.values()]
+    .sort((a, b) => b.start - a.start)
+    .slice(0, 8)
+    .map((bucket) => ({
+      label: bucket.start.getTime() === currentWeekStart.getTime()
+        ? `${weekLabelFromStart(bucket.start)} (Current)`
+        : weekLabelFromStart(bucket.start),
+      all: bucket.all,
+      mainJob: bucket.mainJob,
+      sideJob: bucket.sideJob,
+    }));
+}
+
+function getSelectedEntryWorkType() {
+  const selected = [...entryWorkTypeInputs].find((input) => input.checked);
+  return selected ? selected.value : "Main Job";
+}
+
+function setEntryWorkType(value) {
+  entryWorkTypeInputs.forEach((input) => {
+    input.checked = input.value === value;
+  });
+}
+
+function getCheckedWorkType(inputs) {
+  const selected = [...inputs].find((input) => input.checked);
+  return selected ? selected.value : "Main Job";
+}
+
+function setCheckedWorkType(inputs, value) {
+  inputs.forEach((input) => {
+    input.checked = input.value === value;
+  });
+}
+
+function updateEditState(sessionId, nextState) {
+  if (!nextState.isEditing) {
+    editState.delete(sessionId);
+    return;
+  }
+
+  editState.set(sessionId, nextState);
+}
+
+function clearEditState(sessionId) {
+  editState.delete(sessionId);
+}
+
+function normalizeWorkType(workType) {
+  if (workType === "Side Job" || workType === "State") {
+    return "Side Job";
+  }
+
+  return "Main Job";
 }
